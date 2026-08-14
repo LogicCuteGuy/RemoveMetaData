@@ -68,6 +68,7 @@ jobs:
         run: cross build --release --target ${{ matrix.target }} -p removemetadata-cli
 
       - name: Rename CLI artifact
+        shell: bash
         run: mv target/${{ matrix.target }}/release/${{ matrix.rename }} ${{ matrix.artifact }}
 
       - name: Upload CLI artifact
