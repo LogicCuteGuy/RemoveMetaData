@@ -4,8 +4,8 @@ A fast, cross-platform tool to strip AI-generated metadata from images, document
 
 Built in **Rust**. No Python required.
 
-[![CI](https://github.com/FreedomTrails/RemoveMetaData/actions/workflows/ci.yml/badge.svg)](https://github.com/FreedomTrails/RemoveMetaData/actions/workflows/ci.yml)
-[![Pages](https://github.com/FreedomTrails/RemoveMetaData/actions/workflows/pages.yml/badge.svg)](https://freedomtrails.github.io/RemoveMetaData/)
+[![CI](https://github.com/LogicCuteGuy/RemoveMetaData/actions/workflows/ci.yml/badge.svg)](https://github.com/LogicCuteGuy/RemoveMetaData/actions/workflows/ci.yml)
+[![Pages](https://github.com/LogicCuteGuy/RemoveMetaData/actions/workflows/pages.yml/badge.svg)](https://logiccuteguy.github.io/RemoveMetaData/)
 
 ## Features
 
@@ -40,7 +40,7 @@ Grab the latest release for your platform from [Releases](../../releases).
 Requires [Rust](https://rustup.rs/) (1.70+).
 
 ```bash
-git clone https://github.com/FreedomTrails/RemoveMetaData.git
+git clone https://github.com/LogicCuteGuy/RemoveMetaData.git
 cd RemoveMetaData
 
 # Build CLI + GUI
@@ -99,7 +99,7 @@ Open `index.html` in any browser — no server needed.
 - Toggle **☰ List** / **⊞ Grid** views (grid shows image thumbnails)
 - Click any file to open the **popup editor** — override all 8 metadata fields per file
 - Process and download individually or as a ZIP
-- Deploys automatically to [GitHub Pages](https://freedomtrails.github.io/RemoveMetaData/) on push to `main`
+- Deploys automatically to [GitHub Pages](https://logiccuteguy.github.io/RemoveMetaData/) on push to `main`
 
 ## Supported Formats
 

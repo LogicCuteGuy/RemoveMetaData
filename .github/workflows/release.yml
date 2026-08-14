@@ -67,15 +67,28 @@ jobs:
         if: matrix.cross
         run: cross build --release --target ${{ matrix.target }} -p removemetadata-cli
 
-      - name: Rename CLI artifact
+      - name: Rename artifacts
         shell: bash
-        run: mv target/${{ matrix.target }}/release/${{ matrix.rename }} ${{ matrix.artifact }}
+        run: |
+          SRC="target/${{ matrix.target }}/release"
+          if [[ "${{ matrix.artifact }}" == *.exe ]]; then EXT=".exe"; else EXT=""; fi
+          mv "$SRC/RemoveMetaData${EXT}" "${{ matrix.artifact }}"
+          if [ "${{ matrix.cross }}" != "true" ] && [ -f "$SRC/RemoveMetaData-GUI${EXT}" ]; then
+            mv "$SRC/RemoveMetaData-GUI${EXT}" "${{ matrix.artifact }}-GUI${EXT}"
+          fi
 
       - name: Upload CLI artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.target }}-cli
           path: ${{ matrix.artifact }}
+
+      - name: Upload GUI artifact
+        if: "!matrix.cross"
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.target }}-gui
+          path: ${{ matrix.artifact }}-GUI*
 
   release:
     needs: build
@@ -109,13 +122,13 @@ jobs:
             Built in Rust — no Python required.
 
             ### Downloads
-            | Platform | File |
-            |----------|------|
-            | Windows x64 | `RemoveMetaData-windows-x64.exe` |
-            | Linux x64 | `RemoveMetaData-linux-x64` |
-            | Linux ARM64 | `RemoveMetaData-linux-arm64` |
-            | macOS x64 | `RemoveMetaData-macos-x64` |
-            | macOS ARM64 | `RemoveMetaData-macos-arm64` |
+            | Platform | CLI | GUI |
+            |----------|-----|-----|
+            | Windows x64 | `RemoveMetaData-windows-x64.exe` | `RemoveMetaData-windows-x64-GUI.exe` |
+            | Linux x64 | `RemoveMetaData-linux-x64` | `RemoveMetaData-linux-x64-GUI` |
+            | Linux ARM64 | `RemoveMetaData-linux-arm64` | — |
+            | macOS x64 | `RemoveMetaData-macos-x64` | `RemoveMetaData-macos-x64-GUI` |
+            | macOS ARM64 | `RemoveMetaData-macos-arm64` | `RemoveMetaData-macos-arm64-GUI` |
 
             ### Usage
             ```bash

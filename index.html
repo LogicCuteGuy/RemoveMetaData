@@ -100,9 +100,9 @@
 
         <div class="settings">
             <label>Author</label>
-            <input type="text" id="authorInput" value="Freedom Trails, LogicCuteGuy">
+            <input type="text" id="authorInput" value="LogicCuteGuy">
             <label>Source</label>
-            <input type="text" id="sourceInput" value="Freedom Trails">
+            <input type="text" id="sourceInput" value="LogicCuteGuy">
         </div>
 
         <div class="toolbar">
@@ -336,8 +336,8 @@ processBtn.addEventListener('click', async () => {
     processBtn.disabled = true; downloadAllBtn.disabled = true;
     progressBar.style.display = 'block'; summary.style.display = 'none';
     processedResults = [];
-    const gA = document.getElementById('authorInput').value || 'Freedom Trails, LogicCuteGuy';
-    const gS = document.getElementById('sourceInput').value || 'Freedom Trails';
+    const gA = document.getElementById('authorInput').value || 'LogicCuteGuy';
+    const gS = document.getElementById('sourceInput').value || 'LogicCuteGuy';
 
     for (let i = 0; i < files.length; i++) {
         const item = files[i];

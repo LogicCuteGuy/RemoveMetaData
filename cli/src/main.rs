@@ -41,8 +41,19 @@ struct Cli {
     recursive: bool,
 }
 
-fn process_one(path: &Path, output_dir: &Path, author: &str, source: &str, dry_run: bool, rename: bool) {
-    let name = path.file_name().unwrap_or_default().to_string_lossy().to_string();
+fn process_one(
+    path: &Path,
+    output_dir: &Path,
+    author: &str,
+    source: &str,
+    dry_run: bool,
+    rename: bool,
+) {
+    let name = path
+        .file_name()
+        .unwrap_or_default()
+        .to_string_lossy()
+        .to_string();
     let display_name = name.clone();
 
     match fs::read(path) {
@@ -87,12 +98,22 @@ fn main() {
     let cli = Cli::parse();
     let output_dir = &cli.output;
 
-    println!("RemoveMetaData v{} — Rust Edition\n", env!("CARGO_PKG_VERSION"));
+    println!(
+        "RemoveMetaData v{} — Rust Edition\n",
+        env!("CARGO_PKG_VERSION")
+    );
 
     for input_path in &cli.input {
         if input_path.is_file() {
             println!("[FILE] {}", input_path.display());
-            process_one(input_path, output_dir, &cli.author, &cli.source, cli.dry_run, !cli.no_rename);
+            process_one(
+                input_path,
+                output_dir,
+                &cli.author,
+                &cli.source,
+                cli.dry_run,
+                !cli.no_rename,
+            );
         } else if input_path.is_dir() {
             let walker = if cli.recursive {
                 WalkDir::new(input_path).max_depth(5)
@@ -105,12 +126,22 @@ fn main() {
                     let name = entry.file_name().to_string_lossy().to_string();
                     if engine::is_supported(&name) {
                         println!("[FILE] {}", entry.path().display());
-                        process_one(entry.path(), output_dir, &cli.author, &cli.source, cli.dry_run, !cli.no_rename);
+                        process_one(
+                            entry.path(),
+                            output_dir,
+                            &cli.author,
+                            &cli.source,
+                            cli.dry_run,
+                            !cli.no_rename,
+                        );
                         count += 1;
                     }
                 }
             }
-            println!("[DONE] Processed {count} file(s) from {}", input_path.display());
+            println!(
+                "[DONE] Processed {count} file(s) from {}",
+                input_path.display()
+            );
         } else {
             println!("[SKIP] Not found: {}", input_path.display());
         }

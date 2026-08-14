@@ -1,5 +1,5 @@
-use wasm_bindgen::prelude::*;
 use removemetadata_engine as engine;
+use wasm_bindgen::prelude::*;
 
 /// Process a file and return the result as a JS object.
 /// Args: name (string), data (Uint8Array), author (string), source (string)
@@ -11,17 +11,30 @@ pub fn process_file(name: &str, data: &[u8], author: &str, source: &str) -> Opti
     let obj = js_sys::Object::new();
     let arr = js_sys::Uint8Array::from(result.output.as_slice());
     js_sys::Reflect::set(&obj, &"data".into(), &arr).ok()?;
-    js_sys::Reflect::set(&obj, &"removed".into(), &JsValue::from_f64(result.removed as f64)).ok()?;
+    js_sys::Reflect::set(
+        &obj,
+        &"removed".into(),
+        &JsValue::from_f64(result.removed as f64),
+    )
+    .ok()?;
     js_sys::Reflect::set(&obj, &"type".into(), &JsValue::from_str(&result.file_type)).ok()?;
     Some(obj.into())
 }
 
 /// Process a file with full metadata fields (all 8).
 #[wasm_bindgen]
+#[allow(clippy::too_many_arguments)]
 pub fn process_file_meta(
-    name: &str, data: &[u8],
-    author: &str, source: &str, title: &str, description: &str,
-    credit: &str, keywords: &str, category: &str, comments: &str
+    name: &str,
+    data: &[u8],
+    author: &str,
+    source: &str,
+    title: &str,
+    description: &str,
+    credit: &str,
+    keywords: &str,
+    category: &str,
+    comments: &str,
 ) -> Option<JsValue> {
     let meta = engine::Metadata {
         author: author.to_string(),
@@ -37,7 +50,12 @@ pub fn process_file_meta(
     let obj = js_sys::Object::new();
     let arr = js_sys::Uint8Array::from(result.output.as_slice());
     js_sys::Reflect::set(&obj, &"data".into(), &arr).ok()?;
-    js_sys::Reflect::set(&obj, &"removed".into(), &JsValue::from_f64(result.removed as f64)).ok()?;
+    js_sys::Reflect::set(
+        &obj,
+        &"removed".into(),
+        &JsValue::from_f64(result.removed as f64),
+    )
+    .ok()?;
     js_sys::Reflect::set(&obj, &"type".into(), &JsValue::from_str(&result.file_type)).ok()?;
     Some(obj.into())
 }

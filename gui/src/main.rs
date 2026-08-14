@@ -1,6 +1,6 @@
 #![windows_subsystem = "windows"]
 
-use eframe::egui::{self, Color32, RichText, Rounding, Stroke, Vec2, TextureHandle};
+use eframe::egui::{self, Color32, RichText, Rounding, Stroke, TextureHandle, Vec2};
 use removemetadata_engine as engine;
 use std::collections::HashMap;
 use std::fs;
@@ -159,17 +159,31 @@ impl App {
     fn ensure_thumbnails(&mut self, ctx: &egui::Context) {
         let thumb_size: u32 = 64;
         for entry in &self.files {
-            if self.thumbnails.contains_key(&entry.path) { continue; }
-            let ext = entry.path.extension().unwrap_or_default().to_string_lossy().to_uppercase();
+            if self.thumbnails.contains_key(&entry.path) {
+                continue;
+            }
+            let ext = entry
+                .path
+                .extension()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_uppercase();
             let is_image = matches!(ext.as_str(), "PNG" | "JPG" | "JPEG" | "WEBP" | "GIF");
-            if !is_image { continue; }
+            if !is_image {
+                continue;
+            }
             if let Ok(bytes) = fs::read(&entry.path) {
                 if let Ok(img) = image::load_from_memory(&bytes) {
-                    let resized = img.resize(thumb_size, thumb_size, image::imageops::FilterType::Lanczos3);
+                    let resized = img.resize(
+                        thumb_size,
+                        thumb_size,
+                        image::imageops::FilterType::Lanczos3,
+                    );
                     let rgba = resized.to_rgba8();
                     let (w, h) = rgba.dimensions();
                     let pixels: Vec<u8> = rgba.into_raw();
-                    let color_image = egui::ColorImage::from_rgba_unmultiplied([w as usize, h as usize], &pixels);
+                    let color_image =
+                        egui::ColorImage::from_rgba_unmultiplied([w as usize, h as usize], &pixels);
                     let tex = ctx.load_texture(
                         entry.path.to_string_lossy().to_string(),
                         color_image,
@@ -189,28 +203,70 @@ impl App {
         let _ = fs::create_dir_all(&out);
 
         for entry in &mut self.files {
-            let name = entry.path.file_name().unwrap_or_default().to_string_lossy().to_string();
+            let name = entry
+                .path
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
             match fs::read(&entry.path) {
                 Ok(data) => {
                     let ft = engine::detect_file_type(&name, &data);
                     if ft.is_empty() {
                         entry.status = FileStatus::Skipped("Unsupported".into());
-                        self.log.push((format!("  ⏭ {name} — unsupported format"), MUTED));
+                        self.log
+                            .push((format!("  ⏭ {name} — unsupported format"), MUTED));
                         continue;
                     }
                     let meta = engine::Metadata {
-                        author: if entry.use_global_author { self.author.clone() } else { entry.author.clone() },
-                        source: if entry.use_global_source { self.source.clone() } else { entry.source.clone() },
-                        title: if entry.use_global_title { self.title.clone() } else { entry.title.clone() },
-                        description: if entry.use_global_description { self.description.clone() } else { entry.description.clone() },
-                        credit: if entry.use_global_credit { self.credit.clone() } else { entry.credit.clone() },
-                        keywords: if entry.use_global_keywords { self.keywords.clone() } else { entry.keywords.clone() },
-                        category: if entry.use_global_category { self.category.clone() } else { entry.category.clone() },
-                        comments: if entry.use_global_comments { self.comments.clone() } else { entry.comments.clone() },
+                        author: if entry.use_global_author {
+                            self.author.clone()
+                        } else {
+                            entry.author.clone()
+                        },
+                        source: if entry.use_global_source {
+                            self.source.clone()
+                        } else {
+                            entry.source.clone()
+                        },
+                        title: if entry.use_global_title {
+                            self.title.clone()
+                        } else {
+                            entry.title.clone()
+                        },
+                        description: if entry.use_global_description {
+                            self.description.clone()
+                        } else {
+                            entry.description.clone()
+                        },
+                        credit: if entry.use_global_credit {
+                            self.credit.clone()
+                        } else {
+                            entry.credit.clone()
+                        },
+                        keywords: if entry.use_global_keywords {
+                            self.keywords.clone()
+                        } else {
+                            entry.keywords.clone()
+                        },
+                        category: if entry.use_global_category {
+                            self.category.clone()
+                        } else {
+                            entry.category.clone()
+                        },
+                        comments: if entry.use_global_comments {
+                            self.comments.clone()
+                        } else {
+                            entry.comments.clone()
+                        },
                     };
                     match engine::process_file(&name, &data, &meta) {
                         Some(result) => {
-                            let out_name = if self.rename { engine::clean_filename(&name) } else { name.clone() };
+                            let out_name = if self.rename {
+                                engine::clean_filename(&name)
+                            } else {
+                                name.clone()
+                            };
                             let out_path = out.join(&out_name);
                             if !self.dry_run {
                                 if let Err(e) = fs::write(&out_path, &result.output) {
@@ -220,11 +276,17 @@ impl App {
                                 }
                             }
                             self.total_removed += result.removed;
-                            entry.status = FileStatus::Ok { removed: result.removed };
+                            entry.status = FileStatus::Ok {
+                                removed: result.removed,
+                            };
                             if result.removed > 0 {
-                                self.log.push((format!("  ✓ {name} — removed {} AI tag(s)", result.removed), GREEN));
+                                self.log.push((
+                                    format!("  ✓ {name} — removed {} AI tag(s)", result.removed),
+                                    GREEN,
+                                ));
                             } else {
-                                self.log.push((format!("  ✓ {name} — clean, no AI tags", ), ACCENT));
+                                self.log
+                                    .push((format!("  ✓ {name} — clean, no AI tags",), ACCENT));
                             }
                         }
                         None => {
@@ -239,8 +301,19 @@ impl App {
                 }
             }
         }
-        let ok_count = self.files.iter().filter(|f| matches!(f.status, FileStatus::Ok { .. })).count();
-        self.log.push((format!("Done — {ok_count}/{ } processed, {} AI tag(s) removed", self.files.len(), self.total_removed), GREEN));
+        let ok_count = self
+            .files
+            .iter()
+            .filter(|f| matches!(f.status, FileStatus::Ok { .. }))
+            .count();
+        self.log.push((
+            format!(
+                "Done — {ok_count}/{ } processed, {} AI tag(s) removed",
+                self.files.len(),
+                self.total_removed
+            ),
+            GREEN,
+        ));
         self.processing = false;
     }
 }
@@ -249,7 +322,9 @@ impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         // Handle drag-and-drop
         let dropped: Vec<PathBuf> = ctx.input(|i| {
-            i.raw.dropped_files.iter()
+            i.raw
+                .dropped_files
+                .iter()
                 .filter_map(|f| f.path.clone())
                 .collect()
         });
