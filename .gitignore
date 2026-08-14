@@ -1,0 +1,35 @@
+# Rust build artifacts
+target/
+
+# wasm-pack intermediate output
+web/pkg/
+
+# Test samples and output
+out/
+test_real/
+
+# Node
+node_modules/
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.suo
+*.user
+*.sln.docstates
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Misc
+*.log
+
+# WASM build output (rebuilt in CI for Pages deploy)
+removemetadata_wasm.js
+removemetadata_wasm_bg.wasm
+removemetadata_wasm_bg.wasm.d.ts
+removemetadata_wasm.d.ts
+package.json

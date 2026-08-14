@@ -1,0 +1,13 @@
+[package]
+name = "removemetadata-cli"
+version = "1.0.0"
+edition = "2021"
+
+[[bin]]
+name = "RemoveMetaData"
+path = "src/main.rs"
+
+[dependencies]
+removemetadata-engine = { path = "../engine" }
+clap = { version = "4", features = ["derive"] }
+walkdir = "2"

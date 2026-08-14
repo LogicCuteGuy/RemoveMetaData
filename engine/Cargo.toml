@@ -1,0 +1,9 @@
+[package]
+name = "removemetadata-engine"
+version = "1.0.0"
+edition = "2021"
+
+[dependencies]
+crc32fast = "1.4"
+flate2 = "1.0"
+zip = { version = "0.6", default-features = false, features = ["deflate"] }

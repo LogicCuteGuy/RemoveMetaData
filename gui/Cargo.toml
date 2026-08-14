@@ -1,0 +1,16 @@
+[package]
+name = "removemetadata-gui"
+version = "1.0.0"
+edition = "2021"
+
+[[bin]]
+name = "RemoveMetaData-GUI"
+path = "src/main.rs"
+
+[dependencies]
+removemetadata-engine = { path = "../engine" }
+eframe = "0.28"
+rfd = "0.15"
+walkdir = "2"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+

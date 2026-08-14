@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RemoveMetaData — AI Metadata Remover</title>
+    <style>
+        :root { --bg:#0d1117; --surface:#161b22; --border:#30363d; --text:#e6edf3; --muted:#8b949e; --accent:#58a6ff; --green:#3fb950; --red:#f85149; --yellow:#d29922; }
+        * { box-sizing:border-box; margin:0; padding:0; }
+        body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:2rem; }
+        h1 { font-size:1.8rem; margin-bottom:.3rem; }
+        .subtitle { color:var(--muted); margin-bottom:1.5rem; font-size:.9rem; }
+        .container { width:100%; max-width:720px; }
+        .dropzone { border:2px dashed var(--border); border-radius:12px; padding:3rem 2rem; text-align:center; cursor:pointer; transition:all .2s; background:var(--surface); }
+        .dropzone:hover,.dropzone.dragover { border-color:var(--accent); background:#1c2333; }
+        .dropzone .icon { font-size:2.5rem; margin-bottom:.8rem; }
+        .dropzone p { color:var(--muted); }
+        .dropzone .hint { font-size:.8rem; margin-top:.5rem; color:var(--muted); }
+        input[type="file"] { display:none; }
+        .settings { margin-top:1.2rem; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:1rem 1.2rem; }
+        .settings label { display:block; font-size:.8rem; color:var(--muted); margin-bottom:.3rem; }
+        .settings input[type="text"] { width:100%; padding:.5rem .7rem; border-radius:6px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-size:.9rem; margin-bottom:.7rem; }
+        .settings input[type="text"]:focus { outline:none; border-color:var(--accent); }
+        .supported { margin-top:1rem; font-size:.75rem; color:var(--muted); text-align:center; }
+        .supported span { background:var(--border); padding:.15rem .4rem; border-radius:4px; margin:.1rem; display:inline-block; }
+        .file-list { margin-top:1.2rem; }
+        .file-item { display:flex; align-items:center; justify-content:space-between; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:.6rem 1rem; margin-bottom:.4rem; font-size:.85rem; }
+        .file-item .name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .file-item .type { color:var(--muted); font-size:.7rem; margin-left:.5rem; }
+        .file-item .status { margin-left:1rem; font-size:.75rem; white-space:nowrap; }
+        .file-item .status.ok { color:var(--green); }
+        .file-item .status.err { color:var(--red); }
+        .file-item .status.pending { color:var(--yellow); }
+        .actions { margin-top:1.2rem; display:flex; gap:.8rem; flex-wrap:wrap; }
+        button { padding:.6rem 1.5rem; border-radius:8px; border:none; font-size:.9rem; cursor:pointer; font-weight:500; transition:opacity .2s; }
+        button:disabled { opacity:.4; cursor:not-allowed; }
+        .btn-primary { background:var(--accent); color:#fff; }
+        .btn-secondary { background:var(--border); color:var(--text); }
+        .btn-download { background:var(--green); color:#fff; }
+        .progress-bar { margin-top:1rem; height:4px; background:var(--border); border-radius:2px; overflow:hidden; display:none; }
+        .progress-bar .fill { height:100%; background:var(--accent); width:0%; transition:width .3s; }
+        .summary { margin-top:1rem; padding:1rem; background:var(--surface); border:1px solid var(--border); border-radius:8px; font-size:.85rem; display:none; }
+        .loading-overlay { position:fixed; inset:0; background:rgba(0,0,0,.7); display:flex; align-items:center; justify-content:center; z-index:100; flex-direction:column; gap:1rem; }
+        .spinner { width:40px; height:40px; border:3px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; }
+        @keyframes spin { to { transform:rotate(360deg); } }
+        .badge { display:inline-block; padding:.15rem .5rem; border-radius:10px; font-size:.7rem; font-weight:600; background:#1f6feb33; color:var(--accent); margin-left:.5rem; }
+        .badge.wasm { background:#3fb95033; color:var(--green); }
+        .toolbar { display:flex; align-items:center; justify-content:space-between; margin-top:1rem; margin-bottom:.3rem; }
+        .view-toggle { display:flex; gap:.3rem; }
+        .view-toggle button { padding:.35rem .7rem; font-size:.75rem; border-radius:6px; background:var(--border); color:var(--muted); border:none; cursor:pointer; }
+        .view-toggle button.active { background:var(--accent); color:#fff; }
+        .file-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:.6rem; margin-top:.5rem; }
+        .grid-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:.6rem; cursor:pointer; transition:border-color .2s; text-align:center; }
+        .grid-card:hover,.grid-card.selected { border-color:var(--accent); }
+        .grid-card .thumb { width:100%; aspect-ratio:1; object-fit:cover; border-radius:6px; margin-bottom:.4rem; background:var(--bg); display:block; }
+        .grid-card .icon-placeholder { width:100%; aspect-ratio:1; display:flex; align-items:center; justify-content:center; font-size:2.5rem; border-radius:6px; margin-bottom:.4rem; background:var(--bg); }
+        .grid-card .gname { font-size:.75rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .grid-card .gstatus { font-size:.65rem; margin-top:.2rem; }
+        .grid-card .gstatus.ok { color:var(--green); }
+        .grid-card .gstatus.err { color:var(--red); }
+        .grid-card .gstatus.pending { color:var(--yellow); }
+        .file-item.selected { border-color:var(--accent); }
+        .editor-panel { position:fixed; inset:0; z-index:200; display:none; align-items:center; justify-content:center; }
+        .editor-panel.open { display:flex; }
+        .editor-backdrop { position:absolute; inset:0; background:rgba(0,0,0,.6); }
+        .editor-popup { position:relative; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.4rem 1.6rem; width:90%; max-width:520px; max-height:85vh; overflow-y:auto; box-shadow:0 8px 32px rgba(0,0,0,.5); }
+        .editor-popup h3 { font-size:1rem; margin-bottom:1rem; color:var(--accent); display:flex; align-items:center; justify-content:space-between; }
+        .editor-grid { display:grid; grid-template-columns:1fr 1fr; gap:.6rem .9rem; }
+        .editor-grid label { font-size:.75rem; color:var(--muted); display:block; margin-bottom:.2rem; }
+        .editor-grid input[type="text"] { width:100%; padding:.45rem .65rem; border-radius:6px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-size:.85rem; }
+        .editor-grid input[type="text"]:focus { outline:none; border-color:var(--accent); }
+        .editor-close { background:none; border:none; color:var(--muted); cursor:pointer; font-size:1.2rem; padding:.2rem .5rem; line-height:1; }
+        .editor-close:hover { color:var(--text); }
+        .editor-hint { margin-top:.7rem; font-size:.7rem; color:var(--muted); }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <div id="loadingText">Loading WASM engine...</div>
+    </div>
+
+    <h1>RemoveMetaData <span class="badge wasm">Rust WASM</span></h1>
+    <p class="subtitle">Remove AI metadata from any file — runs entirely in your browser (177 KB engine)</p>
+
+    <div class="container">
+        <div class="dropzone" id="dropzone">
+            <div class="icon">📁</div>
+            <p>Drag & drop files here</p>
+            <p class="hint">or click to browse</p>
+        </div>
+        <input type="file" id="fileInput" multiple>
+
+        <div class="supported">
+            Supported: <span>PNG</span> <span>JPG</span> <span>WebP</span>
+            <span>MP4</span> <span>MOV</span> <span>PDF</span> <span>DOCX</span>
+            <span>XLSX</span> <span>PPTX</span> <span>MP3</span> <span>FLAC</span>
+            <span>EXE</span>
+        </div>
+
+        <div class="settings">
+            <label>Author</label>
+            <input type="text" id="authorInput" value="Freedom Trails, LogicCuteGuy">
+            <label>Source</label>
+            <input type="text" id="sourceInput" value="Freedom Trails">
+        </div>
+
+        <div class="toolbar">
+            <span style="font-size:.8rem;color:var(--muted)" id="fileCountLabel"></span>
+            <div class="view-toggle">
+                <button id="viewList" class="active" title="List view">☰ List</button>
+                <button id="viewGrid" title="Grid view">⊞ Grid</button>
+            </div>
+        </div>
+
+        <div class="file-list" id="fileList"></div>
+        <div id="fileGrid" class="file-grid" style="display:none"></div>
+
+        <div class="progress-bar" id="progressBar"><div class="fill" id="progressFill"></div></div>
+        <div class="summary" id="summary"></div>
+
+        <div class="actions">
+            <button class="btn-primary" id="processBtn" disabled>Process Files</button>
+            <button class="btn-download" id="downloadAllBtn" disabled>Download All (ZIP)</button>
+            <button class="btn-secondary" id="clearBtn">Clear</button>
+        </div>
+    </div>
+
+    <!-- Editor Popup Modal -->
+    <div class="editor-panel" id="editorPanel">
+        <div class="editor-backdrop" id="editorBackdrop"></div>
+        <div class="editor-popup">
+            <h3><span id="editorTitle">Edit Metadata</span><button class="editor-close" id="editorClose">✕</button></h3>
+            <div class="editor-grid">
+                <div><label>Author</label><input type="text" id="edAuthor"></div>
+                <div><label>Source</label><input type="text" id="edSource"></div>
+                <div><label>Title</label><input type="text" id="edTitle"></div>
+                <div><label>Description</label><input type="text" id="edDescription"></div>
+                <div><label>Credit</label><input type="text" id="edCredit"></div>
+                <div><label>Keywords</label><input type="text" id="edKeywords"></div>
+                <div><label>Category</label><input type="text" id="edCategory"></div>
+                <div><label>Comments</label><input type="text" id="edComments"></div>
+            </div>
+            <div class="editor-hint">Override the global defaults for this file only. Leave blank to use global values.</div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <script type="module">
+import init, { initSync, process_file, process_file_meta, detect_type, is_supported, clean_filename } from './removemetadata_wasm.js';
+// Expose to global scope for the non-module app script
+window.process_file = process_file;
+window.process_file_meta = process_file_meta;
+window.detect_type = detect_type;
+window.is_supported = is_supported;
+window.clean_filename = clean_filename;
+window.__wasmInitSync = initSync;
+window.__wasmDefaultInit = init;
+
+// ─── WASM Init ───
+let wasmModule = null;
+
+function loadWasmXhr(url) {
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', url);
+        xhr.responseType = 'arraybuffer';
+        xhr.onload = () => resolve(new Uint8Array(xhr.response));
+        xhr.onerror = () => reject(new Error('XHR failed'));
+        xhr.send();
+    });
+}
+
+async function initWasm() {
+    let bytes;
+    try {
+        const resp = await fetch('removemetadata_wasm_bg.wasm');
+        bytes = new Uint8Array(await resp.arrayBuffer());
+    } catch (e) {
+        bytes = await loadWasmXhr('removemetadata_wasm_bg.wasm');
+    }
+    wasmModule = await window.__wasmDefaultInit(bytes);
+    window.wasmReady = true;
+    document.getElementById('loadingOverlay').style.display = 'none';
+}
+
+initWasm().catch(err => {
+    document.getElementById('loadingText').textContent = 'Failed to load WASM: ' + err.message;
+});
+</script>
+
+<script>
+// ─── State ───
+let files = [];
+let processedResults = [];
+let viewMode = 'list';
+let selectedIndex = -1;
+let perFileMeta = [];
+let thumbCache = {};
+
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const fileList = document.getElementById('fileList');
+const fileGrid = document.getElementById('fileGrid');
+const processBtn = document.getElementById('processBtn');
+const downloadAllBtn = document.getElementById('downloadAllBtn');
+const clearBtn = document.getElementById('clearBtn');
+const progressBar = document.getElementById('progressBar');
+const progressFill = document.getElementById('progressFill');
+const summary = document.getElementById('summary');
+const viewListBtn = document.getElementById('viewList');
+const viewGridBtn = document.getElementById('viewGrid');
+const editorPanel = document.getElementById('editorPanel');
+const editorClose = document.getElementById('editorClose');
+const fileCountLabel = document.getElementById('fileCountLabel');
+
+// Editor field refs
+const edKeys = ['Author','Source','Title','Description','Credit','Keywords','Category','Comments'];
+const edInputs = {};
+edKeys.forEach(f => { edInputs[f] = document.getElementById('ed' + f); });
+
+// ─── Drag & Drop ───
+dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+dropzone.addEventListener('drop', e => { e.preventDefault(); dropzone.classList.remove('dragover'); addFiles(e.dataTransfer.files); });
+fileInput.addEventListener('change', e => addFiles(e.target.files));
+
+// ─── View Toggle ───
+viewListBtn.addEventListener('click', () => { viewMode='list'; viewListBtn.classList.add('active'); viewGridBtn.classList.remove('active'); renderFiles(); });
+viewGridBtn.addEventListener('click', () => { viewMode='grid'; viewGridBtn.classList.add('active'); viewListBtn.classList.remove('active'); renderFiles(); });
+
+// ─── Editor Panel ───
+editorClose.addEventListener('click', () => { selectedIndex=-1; editorPanel.classList.remove('open'); renderFiles(); });
+document.getElementById('editorBackdrop').addEventListener('click', () => { selectedIndex=-1; editorPanel.classList.remove('open'); renderFiles(); });
+
+edKeys.forEach(field => {
+    const key = field.charAt(0).toLowerCase() + field.slice(1);
+    edInputs[field].addEventListener('input', () => {
+        if (selectedIndex < 0) return;
+        if (!perFileMeta[selectedIndex]) {
+            perFileMeta[selectedIndex] = { author:'', source:'', title:'', description:'', credit:'', keywords:'', category:'', comments:'' };
+        }
+        perFileMeta[selectedIndex][key] = edInputs[field].value;
+    });
+});
+
+function openEditor(idx) {
+    selectedIndex = idx;
+    editorPanel.classList.add('open');
+    document.getElementById('editorTitle').textContent = 'Edit: ' + files[idx].name;
+    const m = perFileMeta[idx];
+    const gA = document.getElementById('authorInput').value;
+    const gS = document.getElementById('sourceInput').value;
+    edInputs['Author'].value = m ? m.author : gA;
+    edInputs['Source'].value = m ? m.source : gS;
+    edInputs['Title'].value = m ? m.title : '';
+    edInputs['Description'].value = m ? m.description : '';
+    edInputs['Credit'].value = m ? m.credit : '';
+    edInputs['Keywords'].value = m ? m.keywords : '';
+    edInputs['Category'].value = m ? m.category : '';
+    edInputs['Comments'].value = m ? m.comments : '';
+    renderFiles();
+}
+
+// ─── Files ───
+function addFiles(fl) {
+    for (const f of fl) {
+        if (!files.some(x => x.name === f.name)) {
+            files.push({ file: f, name: f.name, result: null });
+            perFileMeta.push(null);
+        }
+    }
+    renderFiles();
+    processBtn.disabled = files.length === 0;
+    fileCountLabel.textContent = files.length ? files.length + ' file' + (files.length>1?'s':'') : '';
+}
+
+const IMAGE_RE = /\.(png|jpe?g|gif|webp|bmp|tiff?)$/i;
+function isImage(n) { return IMAGE_RE.test(n); }
+function getThumbUrl(item) {
+    if (thumbCache[item.name]) return thumbCache[item.name];
+    if (isImage(item.name) && item.file.type.startsWith('image/')) {
+        const u = URL.createObjectURL(item.file);
+        thumbCache[item.name] = u;
+        return u;
+    }
+    return null;
+}
+const ICONS = { PNG:'🖼️',JPG:'🖼️',JPEG:'🖼️',GIF:'🖼️',WEBP:'🖼️',PDF:'📄',DOCX:'📝',XLSX:'📊',PPTX:'📽️',MP3:'🎵',FLAC:'🎵',MP4:'🎬',MOV:'🎬',EXE:'⚙️' };
+function fileIcon(n) { return ICONS[n.split('.').pop().toUpperCase()] || '📄'; }
+
+function renderFiles() {
+    fileList.innerHTML = '';
+    fileList.style.display = viewMode==='list' ? 'block' : 'none';
+    fileGrid.innerHTML = '';
+    fileGrid.style.display = viewMode==='grid' ? 'grid' : 'none';
+
+    files.forEach((item, i) => {
+        const st = item.result ? (item.result.ok ? 'ok' : 'err') : 'pending';
+        if (viewMode === 'list') {
+            const d = document.createElement('div');
+            d.className = 'file-item' + (i===selectedIndex ? ' selected' : '');
+            d.style.cursor = 'pointer';
+            const nm = document.createElement('span'); nm.className='name'; nm.textContent=item.name;
+            const tp = document.createElement('span'); tp.className='type'; tp.textContent=item.name.split('.').pop().toUpperCase();
+            const badge = document.createElement('span');
+            if (perFileMeta[i]) { badge.className='badge'; badge.textContent='custom'; badge.style.marginLeft='.5rem'; }
+            const st2 = document.createElement('span'); st2.className='status '+st;
+            st2.textContent = item.result ? (item.result.ok ? `✓ ${item.result.removed} removed` : `✗ ${item.result.error}`) : 'pending';
+            d.appendChild(nm); d.appendChild(tp); d.appendChild(badge); d.appendChild(st2);
+            d.addEventListener('click', () => openEditor(i));
+            fileList.appendChild(d);
+        } else {
+            const card = document.createElement('div');
+            card.className = 'grid-card' + (i===selectedIndex ? ' selected' : '');
+            const thumb = getThumbUrl(item);
+            if (thumb) {
+                const img = document.createElement('img'); img.className='thumb'; img.src=thumb; img.alt=item.name; card.appendChild(img);
+            } else {
+                const ph = document.createElement('div'); ph.className='icon-placeholder'; ph.textContent=fileIcon(item.name); card.appendChild(ph);
+            }
+            const gn = document.createElement('div'); gn.className='gname'; gn.textContent=item.name;
+            const gs = document.createElement('div'); gs.className='gstatus '+st;
+            gs.textContent = item.result ? (item.result.ok ? '✓ done' : '✗ error') : 'pending';
+            card.appendChild(gn); card.appendChild(gs);
+            card.addEventListener('click', () => openEditor(i));
+            fileGrid.appendChild(card);
+        }
+    });
+}
+
+// ─── Process ───
+processBtn.addEventListener('click', async () => {
+    if (!window.wasmReady) return;
+    processBtn.disabled = true; downloadAllBtn.disabled = true;
+    progressBar.style.display = 'block'; summary.style.display = 'none';
+    processedResults = [];
+    const gA = document.getElementById('authorInput').value || 'Freedom Trails, LogicCuteGuy';
+    const gS = document.getElementById('sourceInput').value || 'Freedom Trails';
+
+    for (let i = 0; i < files.length; i++) {
+        const item = files[i];
+        progressFill.style.width = ((i+1)/files.length*100)+'%';
+        const buf = await item.file.arrayBuffer();
+        const u8 = new Uint8Array(buf);
+        const m = perFileMeta[i];
+        const a = m ? (m.author || gA) : gA;
+        const s = m ? (m.source || gS) : gS;
+        const ti = m ? (m.title||'') : '';
+        const de = m ? (m.description||'') : '';
+        const cr = m ? (m.credit||'') : '';
+        const kw = m ? (m.keywords||'') : '';
+        const ca = m ? (m.category||'') : '';
+        const cm = m ? (m.comments||'') : '';
+        try {
+            const r = process_file_meta(item.name, u8, a, s, ti, de, cr, kw, ca, cm);
+            if (r === null || r === undefined) {
+                item.result = { ok: false, error: 'Unsupported file type' };
+            } else {
+                item.result = { ok: true, name: clean_filename(item.name), removed: r.removed, type: r.type, data: new Uint8Array(r.data) };
+                processedResults.push({ name: item.result.name, data: item.result.data, original: item.name });
+            }
+        } catch (e) { item.result = { ok: false, error: e.message || String(e) }; }
+        renderFiles();
+    }
+    const ok = files.filter(f=>f.result?.ok).length;
+    const fail = files.filter(f=>f.result && !f.result.ok).length;
+    const chunks = files.reduce((s,f)=>s+(f.result?.removed||0),0);
+    summary.style.display = 'block';
+    summary.innerHTML = `<strong>Done!</strong> ${ok} processed, ${fail} errors, ${chunks} AI metadata sections removed.`;
+    processBtn.disabled = false;
+    downloadAllBtn.disabled = processedResults.length === 0;
+});
+
+// ─── Download ───
+downloadAllBtn.addEventListener('click', async () => {
+    if (processedResults.length===0) return;
+    if (processedResults.length===1) { const r=processedResults[0]; dl(new Blob([r.data],{type:'application/octet-stream'}),r.name); return; }
+    const zip = new JSZip();
+    for (const r of processedResults) zip.file(r.name, r.data);
+    dl(await zip.generateAsync({type:'blob'}), 'RemoveMetaData_output.zip');
+});
+function dl(blob,name) { const u=URL.createObjectURL(blob),a=document.createElement('a'); a.href=u; a.download=name; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(u); }
+
+// ─── Clear ───
+clearBtn.addEventListener('click', () => {
+    files=[]; processedResults=[]; perFileMeta=[]; selectedIndex=-1;
+    fileList.innerHTML=''; fileGrid.innerHTML='';
+    summary.style.display='none'; progressBar.style.display='none';
+    processBtn.disabled=true; downloadAllBtn.disabled=true; fileInput.value='';
+    editorPanel.classList.remove('open'); fileCountLabel.textContent='';
+    Object.values(thumbCache).forEach(u=>URL.revokeObjectURL(u)); thumbCache={};
+});
+</script>
+</body>
+</html>
