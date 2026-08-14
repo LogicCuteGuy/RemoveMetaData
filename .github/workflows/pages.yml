@@ -25,12 +25,16 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
 
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
       - name: Build WASM
-        run: wasm-pack build web --target web --out-dir ../
+        run: |
+          cd web
+          wasm-pack build --target web --out-dir ..
 
       - name: Prepare deploy directory
         run: |
@@ -39,7 +43,7 @@ jobs:
           cp removemetadata_wasm.js removemetadata_wasm_bg.wasm _deploy/
           cp removemetadata_wasm.d.ts removemetadata_wasm_bg.wasm.d.ts _deploy/
           cp README.md LICENSE _deploy/
-          echo '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=index.html"></head></html>' > _deploy/.nojekyll
+          touch _deploy/.nojekyll
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
